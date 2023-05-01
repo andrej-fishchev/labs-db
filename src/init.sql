@@ -1,63 +1,71 @@
 CREATE OR REPLACE TABLE server_groups
 (
-    group_id          BIGINT       NOT NULL PRIMARY KEY,
+    group_id          BIGINT       NOT NULL PRIMARY KEY AUTO_INCREMENT,
     group_name        VARCHAR(255) NOT NULL,
     group_description VARCHAR(255) NOT NULL,
-    group_status      INT          NOT NULL
+    group_status      INT          NOT NULL DEFAULT 0,
+
+    CONSTRAINT ukGroupName UNIQUE (group_name)
 );
 
 CREATE OR REPLACE TABLE servers
 (
-    server_id          BIGINT       NOT NULL PRIMARY KEY,
+    server_id          BIGINT       NOT NULL PRIMARY KEY AUTO_INCREMENT,
     server_group       BIGINT       NULL,
-    server_ip          VARCHAR(255) NOT NULL,
+    server_ip          VARCHAR(64)  NOT NULL,
     server_port        INT          NOT NULL,
     server_name        VARCHAR(255) NOT NULL,
     server_description VARCHAR(255) NOT NULL,
+    server_status      INT          NOT NULL DEFAULT 0,
     server_input_time  DATETIME(6)  NOT NULL,
 
-    CONSTRAINT UK_serveraddress
+    CONSTRAINT ukServerAddress
         UNIQUE (server_ip, server_port),
+
+    CONSTRAINT ukServerName UNIQUE (server_name),
 
     CONSTRAINT FK4v2bhhf69bd6yjw9qaosnic1w
         FOREIGN KEY (server_group) REFERENCES server_groups (group_id)
             ON UPDATE CASCADE
-            ON DELETE RESTRICT
+            ON DELETE SET NULL
 );
 
 CREATE OR REPLACE TABLE clients
 (
-    client_id         BIGINT       NOT NULL PRIMARY KEY,
+    client_id         BIGINT       NOT NULL PRIMARY KEY AUTO_INCREMENT,
     client_steam      VARCHAR(255) NOT NULL,
     client_name       VARCHAR(255) NOT NULL,
     client_input_time DATETIME(6)  NOT NULL,
 
-    CONSTRAINT UK_4197foicfwjv5eg8fvv98k2aa
+    CONSTRAINT ukClientSteam
         UNIQUE (client_steam)
 );
 
 CREATE OR REPLACE TABLE client_activities
 (
-    activity_id           BIGINT       NOT NULL PRIMARY KEY,
-    activity_initiator    BIGINT       NOT NULL,
+    activity_id           BIGINT       NOT NULL PRIMARY KEY AUTO_INCREMENT,
+    activity_owner        BIGINT       NOT NULL,
     activity_server       BIGINT       NOT NULL,
     activity_duration     INT          NOT NULL,
-    activity_initial_time DATETIME(6)  NOT NULL,
+    activity_input_time   DATETIME(6)  NOT NULL,
 
     CONSTRAINT FK2dtofdm2kq9vtjw1l9n4ibv12
-        FOREIGN KEY (activity_initiator) REFERENCES clients (client_id)
+        FOREIGN KEY (activity_owner) REFERENCES clients (client_id)
             ON UPDATE CASCADE
             ON DELETE CASCADE,
 
     CONSTRAINT FKimig830p53q3y0gb6n6afqhem
         FOREIGN KEY (activity_server) REFERENCES servers (server_id)
             ON DELETE CASCADE
-            ON UPDATE CASCADE
+            ON UPDATE CASCADE,
+
+    CONSTRAINT checkDuration
+        CHECK ( activity_duration > 0 )
 );
 
 CREATE OR REPLACE TABLE detail_keys
 (
-    key_id   BIGINT       NOT NULL PRIMARY KEY,
+    key_id   BIGINT       NOT NULL PRIMARY KEY AUTO_INCREMENT,
     key_name VARCHAR(128) NOT NULL,
 
     CONSTRAINT UK_dkeyname128
@@ -66,7 +74,7 @@ CREATE OR REPLACE TABLE detail_keys
 
 CREATE OR REPLACE TABLE detail_values
 (
-    value_id   BIGINT       NOT NULL PRIMARY KEY,
+    value_id   BIGINT       NOT NULL PRIMARY KEY AUTO_INCREMENT,
     value_name VARCHAR(255) NOT NULL,
 
     CONSTRAINT UK_dvaluename255
@@ -75,7 +83,7 @@ CREATE OR REPLACE TABLE detail_values
 
 CREATE OR REPLACE TABLE client_details
 (
-    detail_id    BIGINT NOT NULL PRIMARY KEY,
+    detail_id    BIGINT NOT NULL PRIMARY KEY AUTO_INCREMENT,
     detail_owner BIGINT NOT NULL,
     detail_key   BIGINT NOT NULL,
     detail_value BIGINT NOT NULL,
@@ -101,7 +109,7 @@ CREATE OR REPLACE TABLE client_details
 
 CREATE OR REPLACE TABLE client_activity_details
 (
-    detail_id    BIGINT NOT NULL PRIMARY KEY,
+    detail_id    BIGINT NOT NULL PRIMARY KEY AUTO_INCREMENT,
     detail_owner BIGINT NOT NULL,
     detail_key   BIGINT NOT NULL,
     detail_value BIGINT NOT NULL,
@@ -127,7 +135,7 @@ CREATE OR REPLACE TABLE client_activity_details
 
 CREATE OR REPLACE TABLE server_details
 (
-    detail_id    BIGINT NOT NULL PRIMARY KEY,
+    detail_id    BIGINT NOT NULL PRIMARY KEY AUTO_INCREMENT,
     detail_owner BIGINT NOT NULL,
     detail_key   BIGINT NOT NULL,
     detail_value BIGINT NOT NULL,
@@ -153,11 +161,17 @@ CREATE OR REPLACE TABLE server_details
 
 CREATE OR REPLACE TABLE users
 (
-    user_id         BIGINT       NOT NULL PRIMARY KEY,
+    user_id         BIGINT       NOT NULL PRIMARY KEY AUTO_INCREMENT,
     user_client     BIGINT       NULL,
     user_name       VARCHAR(128) NOT NULL,
     user_secret     VARCHAR(512) NOT NULL,
     user_input_time DATETIME(6)  NOT NULL,
+
+    CONSTRAINT UKbp2u2ifrt3hqmg8cmfpm0v21a
+        UNIQUE (user_name),
+
+    CONSTRAINT UKbp2u2ifrt3hqmg8cmfpm0vhjg
+        UNIQUE (user_client),
 
     CONSTRAINT FKejrutm6vl9vyr7kggamgd04ke
         FOREIGN KEY (user_client) REFERENCES clients (client_id)
@@ -167,7 +181,7 @@ CREATE OR REPLACE TABLE users
 
 CREATE OR REPLACE TABLE user_details
 (
-    detail_id    BIGINT NOT NULL PRIMARY KEY,
+    detail_id    BIGINT NOT NULL PRIMARY KEY AUTO_INCREMENT,
     detail_owner BIGINT NOT NULL,
     detail_key   BIGINT NOT NULL,
     detail_value BIGINT NOT NULL,
@@ -193,7 +207,7 @@ CREATE OR REPLACE TABLE user_details
 
 CREATE OR REPLACE TABLE flag_groups
 (
-    group_id          BIGINT       NOT NULL PRIMARY KEY,
+    group_id          BIGINT       NOT NULL PRIMARY KEY AUTO_INCREMENT,
     group_name        VARCHAR(255) NOT NULL,
     group_description VARCHAR(255) NOT NULL,
 
@@ -203,7 +217,7 @@ CREATE OR REPLACE TABLE flag_groups
 
 CREATE OR REPLACE TABLE flags
 (
-    flag_id          BIGINT       NOT NULL PRIMARY KEY,
+    flag_id          BIGINT       NOT NULL PRIMARY KEY AUTO_INCREMENT,
     flag_signature   VARCHAR(4)   NOT NULL,
     flag_description VARCHAR(255) NOT NULL,
     flag_input_time  DATETIME(6)  NOT NULL,
@@ -214,7 +228,7 @@ CREATE OR REPLACE TABLE flags
 
 CREATE OR REPLACE TABLE flag_group_tuples
 (
-    tuple_id    BIGINT NOT NULL PRIMARY KEY,
+    tuple_id    BIGINT NOT NULL PRIMARY KEY AUTO_INCREMENT,
     tuple_group BIGINT NOT NULL,
     tuple_flag  BIGINT NOT NULL,
 
@@ -234,7 +248,7 @@ CREATE OR REPLACE TABLE flag_group_tuples
 
 CREATE OR REPLACE TABLE user_privileges
 (
-    privilege_id         BIGINT      NOT NULL PRIMARY KEY,
+    privilege_id         BIGINT      NOT NULL PRIMARY KEY AUTO_INCREMENT,
     privilege_giver      BIGINT      NOT NULL,
     privilege_receiver   BIGINT      NOT NULL,
     privilege_group      BIGINT      NOT NULL,
